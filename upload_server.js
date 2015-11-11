@@ -67,11 +67,11 @@ var options = {
     "txt": "text/plain"
   }
   /* Uncomment and edit this section to provide the service via HTTPS:
-   ssl: {
-   key: fs.readFileSync('/Applications/XAMPP/etc/ssl.key/server.key'),
-   cert: fs.readFileSync('/Applications/XAMPP/etc/ssl.crt/server.crt')
-   },
-   */
+  ssl: {
+  key: fs.readFileSync('/Applications/XAMPP/etc/ssl.key/server.key'),
+  cert: fs.readFileSync('/Applications/XAMPP/etc/ssl.crt/server.crt')
+},
+*/
 };
 
 
@@ -153,37 +153,37 @@ UploadServer = {
       options.accessControl.allowHeaders
     );
     var handleResult = function (result, redirect) {
-        if (redirect) {
-          res.writeHead(302, {
-            'Location': redirect.replace(
-              /%s/,
-              encodeURIComponent(JSON.stringify(result))
-            )
-          });
-          res.end();
-        } else if (result.error) {
-          res.writeHead(403, {'Content-Type': 'text/plain'});
-          res.write(result.error);
-          res.end();
-        } else {
-          //res.writeHead(200, {
-          //  'Content-Type': req.headers.accept
-          //    .indexOf('application/json') !== -1 ?
-          //    'application/json' : 'text/plain'
-          //});
-          res.end(JSON.stringify(result));
-        }
-      },
-      setNoCacheHeaders = function () {
-        if (options.cacheTime) {
-          res.setHeader('Cache-Control', 'public, max-age=' + options.cacheTime);
-        } else {
-          res.setHeader('Pragma', 'no-cache');
-          res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-          // res.setHeader('Content-Disposition', 'inline; filename="files.json"');
-        }
-      },
-      handler = new UploadHandler(req, res, handleResult);
+      if (redirect) {
+        res.writeHead(302, {
+          'Location': redirect.replace(
+            /%s/,
+            encodeURIComponent(JSON.stringify(result))
+          )
+        });
+        res.end();
+      } else if (result.error) {
+        res.writeHead(403, {'Content-Type': 'text/plain'});
+        res.write(result.error);
+        res.end();
+      } else {
+        //res.writeHead(200, {
+        //  'Content-Type': req.headers.accept
+        //    .indexOf('application/json') !== -1 ?
+        //    'application/json' : 'text/plain'
+        //});
+        res.end(JSON.stringify(result));
+      }
+    },
+    setNoCacheHeaders = function () {
+      if (options.cacheTime) {
+        res.setHeader('Cache-Control', 'public, max-age=' + options.cacheTime);
+      } else {
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        // res.setHeader('Content-Disposition', 'inline; filename="files.json"');
+      }
+    },
+    handler = new UploadHandler(req, res, handleResult);
 
 
     // validate the request
@@ -197,59 +197,59 @@ UploadServer = {
 
     switch (req.method) {
       case 'OPTIONS':
-        res.end();
-        break;
+      res.end();
+      break;
       case 'HEAD':
       case 'GET':
-        setNoCacheHeaders();
+      setNoCacheHeaders();
 
-        var uri = url.parse(req.url).pathname;
-        var filename = path.join(options.uploadDir, unescape(uri));
-        var stats;
+      var uri = url.parse(req.url).pathname;
+      var filename = path.join(options.uploadDir, unescape(uri));
+      var stats;
 
-        try {
-          stats = fs.lstatSync(filename); // throws if path doesn't exist
-        } catch (e) {
-          res.writeHead(404, {'Content-Type': 'text/plain'});
-          res.write('404 Not Found\n');
-          res.end();
-          return;
+      try {
+        stats = fs.lstatSync(filename); // throws if path doesn't exist
+      } catch (e) {
+        res.writeHead(404, {'Content-Type': 'text/plain'});
+        res.write('404 Not Found\n');
+        res.end();
+        return;
+      }
+
+      if (stats.isFile()) {
+        // path exists, is a file
+        var mimeType = options.mimeTypes[path.extname(filename).split(".").reverse()[0]];
+        if (!mimeType) {
+          mimeType = "application/octet-stream";
         }
+        res.writeHead(200, {'Content-Type': mimeType});
 
-        if (stats.isFile()) {
-          // path exists, is a file
-          var mimeType = options.mimeTypes[path.extname(filename).split(".").reverse()[0]];
-          if (!mimeType) {
-            mimeType = "application/octet-stream";
-          }
-          res.writeHead(200, {'Content-Type': mimeType});
+        //connect.static(options.uploadDir)(req, res);
+        var fileStream = fs.createReadStream(filename);
+        fileStream.pipe(res);
 
-          //connect.static(options.uploadDir)(req, res);
-          var fileStream = fs.createReadStream(filename);
-          fileStream.pipe(res);
-
-        } else if (stats.isDirectory()) {
-          // path exists, is a directory
-          res.writeHead(403, {'Content-Type': 'text/plain'});
-          res.write('Access denied');
-          res.end();
-        } else {
-          res.writeHead(500, {'Content-Type': 'text/plain'});
-          res.write('500 Internal server error\n');
-          res.end();
-        }
-        break;
+      } else if (stats.isDirectory()) {
+        // path exists, is a directory
+        res.writeHead(403, {'Content-Type': 'text/plain'});
+        res.write('Access denied');
+        res.end();
+      } else {
+        res.writeHead(500, {'Content-Type': 'text/plain'});
+        res.write('500 Internal server error\n');
+        res.end();
+      }
+      break;
       case 'POST':
-        // validate post
-        setNoCacheHeaders();
-        handler.post();
-        break;
+      // validate post
+      setNoCacheHeaders();
+      handler.post();
+      break;
       //case 'DELETE':
       //  handler.destroy();
       //  break;
       default:
-        res.statusCode = 405;
-        res.end();
+      res.statusCode = 405;
+      res.end();
     }
   }
 }
@@ -265,8 +265,8 @@ var nameCountFunc = function (s, index, ext) {
 };
 
 /**
- * @class FileInfo Manages paths for uploaded objects
- */
+* @class FileInfo Manages paths for uploaded objects
+*/
 var FileInfo = function (file, req, form) {
   this.name = file.name;
   this.path = file.name;
@@ -305,8 +305,8 @@ FileInfo.prototype.initUrls = function (req, form) {
     var that = this;
     Object.keys(options.imageVersions).forEach(function (version) {
       if (_existsSync(
-          options.uploadDir + '/' + version + '/' + that.name
-        )) {
+        options.uploadDir + '/' + version + '/' + that.name
+      )) {
         that[version + 'Url'] = that.baseUrl + version + '/' +
         encodeURIComponent(that.name);
       }
@@ -322,21 +322,21 @@ var UploadHandler = function (req, res, callback) {
 
 UploadHandler.prototype.post = function () {
   var handler = this,
-    form = new formidable.IncomingForm(),
-    tmpFiles = [],
-    files = [],
-    map = {},
-    counter = 1,
-    redirect,
-    finish = function () {
-      counter -= 1;
-      if (!counter) {
-        files.forEach(function (fileInfo) {
-          fileInfo.initUrls(handler.req, form);
-        });
-        handler.callback({files: files}, redirect);
-      }
-    };
+  form = new formidable.IncomingForm(),
+  tmpFiles = [],
+  files = [],
+  map = {},
+  counter = 1,
+  redirect,
+  finish = function () {
+    counter -= 1;
+    if (!counter) {
+      files.forEach(function (fileInfo) {
+        fileInfo.initUrls(handler.req, form);
+      });
+      handler.callback({files: files}, redirect);
+    }
+  };
   form.uploadDir = options.tmpDir;
   form.on('fileBegin', function (name, file) {
     tmpFiles.push(file.path);
@@ -409,18 +409,18 @@ UploadHandler.prototype.post = function () {
     var destinationFile = currentFolder + "/" + newFileName;
     try
     {
-     	// Try moving through renameSync
-       	fs.renameSync(file.path, destinationFile)
+      // Try moving through renameSync
+      fs.renameSync(file.path, destinationFile)
     }
     catch(exception)
     {
-    	// if moving failed, try a copy + delete instead, this to support moving work between partitions
-    	var is = fs.createReadStream(file.path);
-		var os = fs.createWriteStream(destinationFile);
-		is.pipe(os);
-		is.on('end',function() {
-    		fs.unlinkSync(file.path);
-		});
+      // if moving failed, try a copy + delete instead, this to support moving work between partitions
+      var is = fs.createReadStream(file.path);
+      var os = fs.createWriteStream(destinationFile);
+      is.pipe(os);
+      is.on('end',function() {
+        fs.unlinkSync(file.path);
+      });
     }
 
     if (options.imageTypes.test(fileInfo.name)) {
@@ -439,7 +439,11 @@ UploadHandler.prototype.post = function () {
           srcPath: currentFolder + '/' + newFileName,
           dstPath: currentFolder + '/' + version + '/' + newFileName,
           customArgs: ["-auto-orient"]
-        }, finish);
+        }, function(err, stdout, stderr){
+          if (err) throw err;
+          else console.log("no error while resizing");
+          finish(err, stdout, stderr);
+        });
       });
     }
 
@@ -465,7 +469,7 @@ UploadHandler.prototype.post = function () {
 
 UploadHandler.prototype.destroy = function () {
   var handler = this,
-    fileName;
+  fileName;
   if (handler.req.url.slice(0, options.uploadUrl.length) === options.uploadUrl) {
     fileName = path.basename(decodeURIComponent(handler.req.url));
     if (fileName[0] !== '.') {
@@ -490,7 +494,7 @@ var checkCreateDirectory = function (dir) {
 
   // If we're on Windows we'll remove the drive letter
   if(/^win/.test(process.platform)) {
-  	dir = dir.replace(/([A-Z]:[\\\/]).*?/gi, '')
+    dir = dir.replace(/([A-Z]:[\\\/]).*?/gi, '')
   }
 
   var dirParts = dir.split('/');
@@ -511,16 +515,16 @@ var checkCreateDirectory = function (dir) {
 }
 
 var getSafeName = function(directory, fileName) {
-	var n = fileName;
-	// Prevent directory traversal and creating hidden system files:
-	n = path.basename(n).replace(/^\.+/, '');
-	// Prevent overwriting existing files:
-	if (!options.overwrite) {
-  	while (_existsSync(directory + '/' + n)) {
-  		n = n.replace(nameCountRegexp, nameCountFunc);
-  	}
+  var n = fileName;
+  // Prevent directory traversal and creating hidden system files:
+  n = path.basename(n).replace(/^\.+/, '');
+  // Prevent overwriting existing files:
+  if (!options.overwrite) {
+    while (_existsSync(directory + '/' + n)) {
+      n = n.replace(nameCountRegexp, nameCountFunc);
+    }
   }
-	return n;
+  return n;
 }
 
 // declare routes
